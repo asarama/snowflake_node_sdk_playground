@@ -9,14 +9,14 @@ const snowflake = require('snowflake-sdk');
 
 // Create a connection object with your Snowflake credentials from the .env file
 const connection = snowflake.createConnection({
-  account: process.env.SNOWFLAKE_ACCOUNT,
-  host: process.env.SNOWFLAKE_HOST,
-  username: process.env.SNOWFLAKE_USERNAME,
-  password: process.env.SNOWFLAKE_PASSWORD,
-  database: process.env.SNOWFLAKE_DATABASE,
-  schema: process.env.SNOWFLAKE_SCHEMA,
-  warehouse: process.env.SNOWFLAKE_WAREHOUSE,
-  role: process.env.SNOWFLAKE_ROLE // Optional: specify role if needed
+  account: process.env.account,
+  // host: process.env.SNOWFLAKE_HOST,
+  username: process.env.username,
+  password: process.env.password,
+  database: process.env.database,
+  schema: process.env.schema,
+  warehouse: process.env.warehouse,
+  role: process.env.role // Optional: specify role if needed
 });
 
 // Connect to Snowflake
