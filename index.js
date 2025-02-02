@@ -10,7 +10,7 @@ const snowflake = require('snowflake-sdk');
 // Create a connection object with your Snowflake credentials from the .env file
 const connection = snowflake.createConnection({
   account: process.env.account,
-  // host: process.env.SNOWFLAKE_HOST,
+  host: process.env.host,
   username: process.env.username,
   password: process.env.password,
   database: process.env.database,
@@ -27,9 +27,12 @@ connection.connect((err, conn) => {
   }
   console.log('Successfully connected as ID: ' + conn.getId());
 
+  const SELECT_TIMESTAMP = 'SELECT CURRENT_TIMESTAMP() AS CURRENT_TIME';
+  const SELECT_ALL_RAW_CUSTOMERS = 'SELECT * FROM DEVELOPER.ARSHAM_E_SCHEMA.RAW_CUSTOMERS';
+
   // Execute a simple SELECT query to get the current timestamp
   connection.execute({
-    sqlText: 'SELECT CURRENT_TIMESTAMP() AS CURRENT_TIME',
+    sqlText: SELECT_ALL_RAW_CUSTOMERS,
     complete: (err, stmt, rows) => {
       if (err) {
         console.error('Failed to execute query: ' + err.message);
