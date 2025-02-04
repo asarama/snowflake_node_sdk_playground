@@ -30,14 +30,20 @@ connection.connect((err, conn) => {
   const SELECT_TIMESTAMP = 'SELECT CURRENT_TIMESTAMP() AS CURRENT_TIME';
   const SELECT_ALL_RAW_CUSTOMERS = 'SELECT * FROM DEVELOPER.ARSHAM_E_SCHEMA.RAW_CUSTOMERS';
 
-  // Execute a simple SELECT query to get the current timestamp
+  // Start timing the query execution
+  console.time('Query Execution Time');
+  
+  // Execute a query to get all raw customers
   connection.execute({
     sqlText: SELECT_ALL_RAW_CUSTOMERS,
     complete: (err, stmt, rows) => {
+      // End timing once the query completes
+      console.timeEnd('Query Execution Time');
+
       if (err) {
         console.error('Failed to execute query: ' + err.message);
       } else {
-        console.log('Query results:', rows);
+        console.log('Query results:', rows.length);
       }
 
       // Cleanly disconnect from Snowflake
