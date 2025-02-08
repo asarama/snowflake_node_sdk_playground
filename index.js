@@ -28,7 +28,7 @@ connection.connect((err, conn) => {
   console.log('Successfully connected as ID: ' + conn.getId());
 
   const SELECT_TIMESTAMP = 'SELECT CURRENT_TIMESTAMP() AS CURRENT_TIME';
-  const SELECT_ALL_RAW_CUSTOMERS = 'SELECT * FROM DEVELOPER.ARSHAM_E_SCHEMA.RAW_CUSTOMERS';
+  const SELECT_ALL_RAW_CUSTOMERS = 'SELECT * FROM DEVELOPER.ARSHAM_E_SCHEMA.RAW_CUSTOMERS LIMIT 50';
 
   // Start timing the query execution
   console.time('Query Execution Time');
@@ -44,6 +44,7 @@ connection.connect((err, conn) => {
         console.error('Failed to execute query: ' + err.message);
       } else {
         console.log('Query results:', rows.length);
+        console.log(rows[0]);
       }
 
       // Cleanly disconnect from Snowflake
