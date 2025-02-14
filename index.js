@@ -19,8 +19,8 @@ queryKeys.forEach(key => {
 });
 
 // Configuration
-const MAX_CONCURRENT_QUERIES = 2;
-const TOTAL_REQUESTS = 10;
+const MAX_CONCURRENT_QUERIES = 10;
+const TOTAL_REQUESTS = 100;
 
 // Metrics for overall queries
 let successCount = 0;
@@ -48,8 +48,6 @@ async function executeQuery() {
     const sqlText = sqlQueries[queryKey];
     const queryStartTime = process.hrtime();
 
-    console.log(`Executing query: ${queryKey}`);
-
     connection.execute({
       sqlText: sqlText,
       complete: (err, stmt, rows) => {
@@ -69,7 +67,6 @@ async function executeQuery() {
           reject(err);
         } else {
           successCount++;
-          console.log(`Query "${queryKey}" completed in ${queryTimeMs.toFixed(2)} ms, Result rows: ${rows.length}`);
           resolve();
         }
       }
@@ -82,7 +79,6 @@ async function runQueries() {
   startTime = Date.now();
   
   const executeNext = () => {
-    console.log(`Executing query: ${queryCount}`);
 
     if (queryCount >= TOTAL_REQUESTS) {
       return;
@@ -91,6 +87,7 @@ async function runQueries() {
     
     executeQuery()
       .then(() => {
+        console.log(`Query ${queryCount} sent`);
         if (queryCount < TOTAL_REQUESTS) {
           executeNext();
         } else {
@@ -144,7 +141,7 @@ async function runQueries() {
 
   // Initial pool of concurrent queries
   for (let i = 0; i < Math.min(MAX_CONCURRENT_QUERIES, TOTAL_REQUESTS); i++) {
-    console.log(`Initializing query: ${i}`);
+    console.log(`Initializing thread: ${i}`);
     executeNext();
   }
 }
