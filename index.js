@@ -13,8 +13,8 @@ const sqlQueries = JSON.parse(fs.readFileSync('sql_queries.json', 'utf-8'));
 const queryKeys = Object.keys(sqlQueries);
 
 // Configuration
-const MAX_CONCURRENT_QUERIES = 2;
-const TOTAL_REQUESTS = 6;
+const MAX_CONCURRENT_QUERIES = 10;
+const TOTAL_REQUESTS = 100;
 
 // Metrics
 let successCount = 0;
@@ -25,7 +25,7 @@ let queryCount = 0;
 // Create a connection object with your Snowflake credentials from the .env file
 const connection = snowflake.createConnection({
   account: process.env.account,
-  host: process.env.host,
+  // host: process.env.host,
   username: process.env.username,
   password: process.env.password,
   database: process.env.database,
@@ -68,6 +68,9 @@ async function runQueries() {
   startTime = Date.now();
   
   const executeNext = () => {
+
+    console.log(`Executing query: ${queryCount}`);
+
     if (queryCount >= TOTAL_REQUESTS) {
       return;
     }
@@ -117,6 +120,7 @@ async function runQueries() {
 
   // Initial pool of concurrent queries
   for (let i = 0; i < Math.min(MAX_CONCURRENT_QUERIES, TOTAL_REQUESTS); i++) {
+    console.log(`Initializing query: ${i}`);
     executeNext();
   }
 }
@@ -127,7 +131,12 @@ connection.connect((err, conn) => {
     console.error('Unable to connect: ' + err.message);
     return;
   }
+
+  console.log('-----------------------------------');
+
   console.log('Successfully connected as ID: ' + conn.getId());
+
+  console.log('-----------------------------------');
 
   runQueries();
 });

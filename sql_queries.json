@@ -1,5 +1,4 @@
 {
     "timestamp": "SELECT CURRENT_TIMESTAMP() AS CURRENT_TIME",
-    "error_raw_customers": "SELECT *,asdf FROM DEVELOPER.ARSHAM_E_SCHEMA.RAW_CUSTOMERS",
     "success_raw_customers": "SELECT * FROM DEVELOPER.ARSHAM_E_SCHEMA.RAW_CUSTOMERS"
 }
