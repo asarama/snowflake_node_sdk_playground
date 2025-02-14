@@ -19,8 +19,8 @@ queryKeys.forEach(key => {
 });
 
 // Configuration
-const MAX_CONCURRENT_QUERIES = 10;
-const TOTAL_REQUESTS = 100;
+const MAX_CONCURRENT_QUERIES = 30;
+const TOTAL_REQUESTS = 1000;
 
 // Metrics for overall queries
 let successCount = 0;
