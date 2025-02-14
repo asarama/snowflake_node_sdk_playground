@@ -1,6 +1,6 @@
 // index.js
-// This script connects to a Snowflake server and executes a query 
-// to get the current timestamp.
+// This script connects to a Snowflake server and executes queries to measure performance,
+// including tracking per-query-type average response times.
 
 // Import dotenv to load values from the .env file
 require('dotenv').config();
@@ -12,11 +12,17 @@ const fs = require('fs');
 const sqlQueries = JSON.parse(fs.readFileSync('sql_queries.json', 'utf-8'));
 const queryKeys = Object.keys(sqlQueries);
 
-// Configuration
-const MAX_CONCURRENT_QUERIES = 10;
-const TOTAL_REQUESTS = 100;
+// Create an object to hold metrics (count, total time, and average time) per query type
+const queryMetrics = {};
+queryKeys.forEach(key => {
+  queryMetrics[key] = { count: 0, totalTime: 0, avg: 0 };
+});
 
-// Metrics
+// Configuration
+const MAX_CONCURRENT_QUERIES = 2;
+const TOTAL_REQUESTS = 10;
+
+// Metrics for overall queries
 let successCount = 0;
 let failureCount = 0;
 let startTime;
@@ -37,6 +43,7 @@ const connection = snowflake.createConnection({
 // Function to execute a query
 async function executeQuery() {
   return new Promise((resolve, reject) => {
+    // Randomly pick a query key from the loaded queries
     const queryKey = queryKeys[Math.floor(Math.random() * queryKeys.length)];
     const sqlText = sqlQueries[queryKey];
     const queryStartTime = process.hrtime();
@@ -46,8 +53,15 @@ async function executeQuery() {
     connection.execute({
       sqlText: sqlText,
       complete: (err, stmt, rows) => {
+        // Measure query duration
         const queryEndTime = process.hrtime(queryStartTime);
         const queryTimeMs = queryEndTime[0] * 1000 + queryEndTime[1] / 1000000;
+
+        // Update the metrics for the specific query type
+        const metrics = queryMetrics[queryKey];
+        metrics.count++;
+        metrics.totalTime += queryTimeMs;
+        metrics.avg = metrics.totalTime / metrics.count;
 
         if (err) {
           console.error('Failed to execute query: ' + err.message);
@@ -55,7 +69,7 @@ async function executeQuery() {
           reject(err);
         } else {
           successCount++;
-          console.log(`Query "${queryKey}" completed in ${queryTimeMs} ms, Result rows: ${rows.length}`);
+          console.log(`Query "${queryKey}" completed in ${queryTimeMs.toFixed(2)} ms, Result rows: ${rows.length}`);
           resolve();
         }
       }
@@ -68,7 +82,6 @@ async function runQueries() {
   startTime = Date.now();
   
   const executeNext = () => {
-
     console.log(`Executing query: ${queryCount}`);
 
     if (queryCount >= TOTAL_REQUESTS) {
@@ -106,6 +119,17 @@ async function runQueries() {
           console.log('Duration: ' + duration + ' seconds');
           console.log('Queries per second: ' + queriesPerSecond);
 
+          // Log the metric details per query type
+          console.log('--- Query Metrics ---');
+          for (const key in queryMetrics) {
+            const metric = queryMetrics[key];
+            if (metric.count > 0) {
+              console.log(`Query "${key}": Executed ${metric.count} times, Avg Response Time: ${metric.avg.toFixed(2)} ms`);
+            } else {
+              console.log(`Query "${key}": Not executed`);
+            }
+          }
+
           // Cleanly disconnect from Snowflake
           connection.destroy((err, conn) => {
             if (err) {
@@ -133,9 +157,7 @@ connection.connect((err, conn) => {
   }
 
   console.log('-----------------------------------');
-
   console.log('Successfully connected as ID: ' + conn.getId());
-
   console.log('-----------------------------------');
 
   runQueries();
