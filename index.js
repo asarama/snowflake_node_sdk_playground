@@ -6,6 +6,21 @@
 require('dotenv').config();
 
 const snowflake = require('snowflake-sdk');
+const fs = require('fs');
+
+// Load SQL queries from sql_queries.json
+const sqlQueries = JSON.parse(fs.readFileSync('sql_queries.json', 'utf-8'));
+const queryKeys = Object.keys(sqlQueries);
+
+// Configuration
+const MAX_CONCURRENT_QUERIES = 2;
+const TOTAL_REQUESTS = 6;
+
+// Metrics
+let successCount = 0;
+let failureCount = 0;
+let startTime;
+let queryCount = 0;
 
 // Create a connection object with your Snowflake credentials from the .env file
 const connection = snowflake.createConnection({
@@ -19,6 +34,93 @@ const connection = snowflake.createConnection({
   role: process.env.role // Optional: specify role if needed
 });
 
+// Function to execute a query
+async function executeQuery() {
+  return new Promise((resolve, reject) => {
+    const queryKey = queryKeys[Math.floor(Math.random() * queryKeys.length)];
+    const sqlText = sqlQueries[queryKey];
+    const queryStartTime = process.hrtime();
+
+    console.log(`Executing query: ${queryKey}`);
+
+    connection.execute({
+      sqlText: sqlText,
+      complete: (err, stmt, rows) => {
+        const queryEndTime = process.hrtime(queryStartTime);
+        const queryTimeMs = queryEndTime[0] * 1000 + queryEndTime[1] / 1000000;
+
+        if (err) {
+          console.error('Failed to execute query: ' + err.message);
+          failureCount++;
+          reject(err);
+        } else {
+          successCount++;
+          console.log(`Query "${queryKey}" completed in ${queryTimeMs} ms, Result rows: ${rows.length}`);
+          resolve();
+        }
+      }
+    });
+  });
+}
+
+// Function to run queries with concurrency control
+async function runQueries() {
+  startTime = Date.now();
+  
+  const executeNext = () => {
+    if (queryCount >= TOTAL_REQUESTS) {
+      return;
+    }
+    queryCount++;
+    
+    executeQuery()
+      .then(() => {
+        if (queryCount < TOTAL_REQUESTS) {
+          executeNext();
+        } else {
+          // All queries are submitted, wait for completion
+          return;
+        }
+      })
+      .catch(() => {
+        if (queryCount < TOTAL_REQUESTS) {
+          executeNext();
+        } else {
+          // All queries are submitted, wait for completion
+          return;
+        }
+      })
+      .finally(() => {
+        if (successCount + failureCount === TOTAL_REQUESTS) {
+          const endTime = Date.now();
+          const duration = (endTime - startTime) / 1000;
+          const queriesPerSecond = TOTAL_REQUESTS / duration;
+
+          console.log('-----------------------------------');
+          console.log('Total Requests: ' + TOTAL_REQUESTS);
+          console.log('Success Count: ' + successCount);
+          console.log('Failure Count: ' + failureCount);
+          console.log('Duration: ' + duration + ' seconds');
+          console.log('Queries per second: ' + queriesPerSecond);
+
+          // Cleanly disconnect from Snowflake
+          connection.destroy((err, conn) => {
+            if (err) {
+              console.error('Error disconnecting: ' + err.message);
+            } else {
+              console.log('Disconnected connection with ID: ' + conn.getId());
+            }
+          });
+        }
+      });
+  };
+
+  // Initial pool of concurrent queries
+  for (let i = 0; i < Math.min(MAX_CONCURRENT_QUERIES, TOTAL_REQUESTS); i++) {
+    executeNext();
+  }
+}
+
 // Connect to Snowflake
 connection.connect((err, conn) => {
   if (err) {
@@ -27,34 +129,5 @@ connection.connect((err, conn) => {
   }
   console.log('Successfully connected as ID: ' + conn.getId());
 
-  const SELECT_TIMESTAMP = 'SELECT CURRENT_TIMESTAMP() AS CURRENT_TIME';
-  const SELECT_ALL_RAW_CUSTOMERS = 'SELECT * FROM DEVELOPER.ARSHAM_E_SCHEMA.RAW_CUSTOMERS LIMIT 50';
-
-  // Start timing the query execution
-  console.time('Query Execution Time');
-  
-  // Execute a query to get all raw customers
-  connection.execute({
-    sqlText: SELECT_ALL_RAW_CUSTOMERS,
-    complete: (err, stmt, rows) => {
-      // End timing once the query completes
-      console.timeEnd('Query Execution Time');
-
-      if (err) {
-        console.error('Failed to execute query: ' + err.message);
-      } else {
-        console.log('Query results:', rows.length);
-        console.log(rows[0]);
-      }
-
-      // Cleanly disconnect from Snowflake
-      connection.destroy((err, conn) => {
-        if (err) {
-          console.error('Error disconnecting: ' + err.message);
-        } else {
-          console.log('Disconnected connection with ID: ' + conn.getId());
-        }
-      });
-    }
-  });
+  runQueries();
 });
