@@ -3,7 +3,7 @@
 // including tracking per-query-type average response times.
 
 // Import dotenv to load values from the .env file
-require('dotenv').config();
+require('dotenv').config({ override: true });
 
 const snowflake = require('snowflake-sdk');
 const fs = require('fs');
@@ -31,7 +31,7 @@ let queryCount = 0;
 // Create a connection object with your Snowflake credentials from the .env file
 const connection = snowflake.createConnection({
   account: process.env.account,
-  // host: process.env.host,
+  host: process.env.host,
   username: process.env.username,
   password: process.env.password,
   database: process.env.database,
