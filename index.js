@@ -19,8 +19,8 @@ queryKeys.forEach(key => {
 });
 
 // Configuration
-const MAX_CONCURRENT_QUERIES = 30;
-const TOTAL_REQUESTS = 1000;
+const MAX_CONCURRENT_QUERIES = 5;
+const TOTAL_REQUESTS = 100;
 
 // Metrics for overall queries
 let successCount = 0;
@@ -28,17 +28,33 @@ let failureCount = 0;
 let startTime;
 let queryCount = 0;
 
-// Create a connection object with your Snowflake credentials from the .env file
-const connection = snowflake.createConnection({
+let snowflakeConfig = {
   account: process.env.account,
   host: process.env.host,
   username: process.env.username,
-  password: process.env.password,
   database: process.env.database,
   schema: process.env.schema,
   warehouse: process.env.warehouse,
   role: process.env.role // Optional: specify role if needed
-});
+}
+
+const password = process.env.password;
+const privateKeyPath = process.env.privateKeyPath;
+const privateKeyPass = process.env.privateKeyPass;
+
+if (password) {
+  snowflakeConfig.password = password;
+} else if (privateKeyPath) {
+  snowflakeConfig.authenticator = 'SNOWFLAKE_JWT';
+  snowflakeConfig.privateKeyPath = privateKeyPath;
+  if (privateKeyPass) {
+    snowflakeConfig.privateKeyPass = privateKeyPass;
+  }
+}
+
+// Create a connection object with your Snowflake credentials from the .env file
+const connection = snowflake.createConnection(snowflakeConfig);
+
 
 // Function to execute a query
 async function executeQuery() {
