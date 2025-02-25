@@ -21,7 +21,7 @@ queryKeys.forEach(key => {
 // "long": "SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCH_SF1000.PART ORDER BY P_PARTKEY LIMIT 1000000;"
 // Configuration
 const MAX_CONCURRENT_QUERIES = 30;
-const TOTAL_REQUESTS = 400;
+const TOTAL_REQUESTS = 10;
 const USE_CACHED_RESULT = false;
 
 // Metrics for overall queries
@@ -32,7 +32,7 @@ let queryCount = 0;
 
 let snowflakeConfig = {
   account: process.env.account,
-  host: process.env.host,
+  // host: process.env.host,
   username: process.env.username,
   database: process.env.database,
   schema: process.env.schema,
@@ -56,18 +56,6 @@ if (password) {
 
 // Create a connection object with your Snowflake credentials from the .env file
 const connection = snowflake.createConnection(snowflakeConfig);
-
-if (USE_CACHED_RESULT) {
-  sqlText = "ALTER SESSION SET USE_CACHED_RESULT = TRUE;"
-} else {
-  sqlText = "ALTER SESSION SET USE_CACHED_RESULT = FALSE;"
-}
-connection.execute({
-  sqlText: sqlText,
-  complete: (err, stmt, rows) => {
-    console.log('Connection is ready');
-  }
-});
 
 
 // Function to execute a query
@@ -187,5 +175,22 @@ connection.connect((err, conn) => {
   console.log('Successfully connected as ID: ' + conn.getId());
   console.log('-----------------------------------');
 
-  runQueries();
+  if (USE_CACHED_RESULT) {
+    sqlText = "ALTER SESSION SET USE_CACHED_RESULT = TRUE;"
+  } else {
+    sqlText = "ALTER SESSION SET USE_CACHED_RESULT = FALSE;"
+  }
+  connection.execute({
+    sqlText: sqlText,
+    complete: (err, stmt, rows) => {
+
+
+      console.log('-----------------------------------');
+      console.log('Successfully set USE_CACHED_RESULT to: ' + USE_CACHED_RESULT);
+      console.log('-----------------------------------');
+
+      runQueries();
+    }
+  });
+  
 });
