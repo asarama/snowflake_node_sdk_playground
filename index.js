@@ -18,9 +18,11 @@ queryKeys.forEach(key => {
   queryMetrics[key] = { count: 0, totalTime: 0, avg: 0 };
 });
 
+// "long": "SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCH_SF1000.PART ORDER BY P_PARTKEY LIMIT 1000000;"
 // Configuration
-const MAX_CONCURRENT_QUERIES = 5;
-const TOTAL_REQUESTS = 100;
+const MAX_CONCURRENT_QUERIES = 30;
+const TOTAL_REQUESTS = 400;
+const USE_CACHED_RESULT = false;
 
 // Metrics for overall queries
 let successCount = 0;
@@ -54,6 +56,18 @@ if (password) {
 
 // Create a connection object with your Snowflake credentials from the .env file
 const connection = snowflake.createConnection(snowflakeConfig);
+
+if (USE_CACHED_RESULT) {
+  sqlText = "ALTER SESSION SET USE_CACHED_RESULT = TRUE;"
+} else {
+  sqlText = "ALTER SESSION SET USE_CACHED_RESULT = FALSE;"
+}
+connection.execute({
+  sqlText: sqlText,
+  complete: (err, stmt, rows) => {
+    console.log('Connection is ready');
+  }
+});
 
 
 // Function to execute a query
